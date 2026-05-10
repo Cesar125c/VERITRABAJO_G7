@@ -4,5 +4,6 @@ public enum ServiceExecutionStatus {
     STARTED,
     IN_PROCESS,
     FINALIZED,
+    VALIDATED,
     DISPUTED
 }

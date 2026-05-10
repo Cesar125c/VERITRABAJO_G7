@@ -61,4 +61,14 @@ export const serviceExecutionService = {
     );
     return response.data;
   },
+
+  finalize: async (id: string): Promise<ServiceExecution> => {
+    const response = await apiClient.put<ServiceExecution>(`/service-executions/${id}/finalize`);
+    return response.data;
+  },
+
+  dispute: async (id: string): Promise<ServiceExecution> => {
+    const response = await apiClient.put<ServiceExecution>(`/service-executions/${id}/dispute`);
+    return response.data;
+  },
 };

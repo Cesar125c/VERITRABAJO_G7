@@ -610,7 +610,6 @@ export const sessionService = {
 
     return {
       ...execution,
-      ...override,
       photoUrls: execution.photoUrls,
       localEvidence: override.localEvidence ?? execution.localEvidence,
     };

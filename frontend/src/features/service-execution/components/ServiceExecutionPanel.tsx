@@ -126,23 +126,16 @@ export const ServiceExecutionPanel = ({
     setBusyExecutionId(execution.id);
     try {
       if (file.type.startsWith('video/')) {
-        throw new Error('Video evidence is local-only with the current backend');
+        throw new Error('El backend actual solo permite guardar fotos como evidencia.');
       }
 
       await serviceExecutionService.uploadPhoto(execution.id, file);
       setSelectedFileByExecution(prev => ({ ...prev, [execution.id]: null }));
       setMessage(execution.id, `Evidencia cargada el ${getTodayLabel()}.`);
       await onChanged();
-    } catch {
-      sessionService.addExecutionEvidence(execution.id, {
-        id: crypto.randomUUID(),
-        fileName: file.name,
-        mediaType: file.type.startsWith('video/') ? 'video' : 'photo',
-        uploadedAt: new Date().toISOString(),
-        source: 'local',
-      });
-      setSelectedFileByExecution(prev => ({ ...prev, [execution.id]: null }));
-      setMessage(execution.id, 'Evidencia registrada localmente para pruebas; el backend actual no pudo persistir esta actualización.');
+    } catch (error: any) {
+      const backendMessage = error.response?.data?.error || error.response?.data?.message || error.message;
+      setMessage(execution.id, backendMessage || 'No se pudo guardar la evidencia en base de datos.');
       await onChanged();
     } finally {
       setBusyExecutionId(null);
@@ -157,28 +150,10 @@ export const ServiceExecutionPanel = ({
     }
 
     if (file.type.startsWith('video/')) {
-      sessionService.addExecutionEvidence(execution.id, {
-        id: crypto.randomUUID(),
-        fileName: file.name,
-        mediaType: 'video',
-        uploadedAt: new Date().toISOString(),
-        source: 'local',
-      });
-      return execution;
+      throw new Error('El backend actual solo permite guardar fotos como evidencia.');
     }
 
-    try {
-      return await serviceExecutionService.uploadPhoto(execution.id, file);
-    } catch {
-      sessionService.addExecutionEvidence(execution.id, {
-        id: crypto.randomUUID(),
-        fileName: file.name,
-        mediaType: 'photo',
-        uploadedAt: new Date().toISOString(),
-        source: 'local',
-      });
-      return execution;
-    }
+    return serviceExecutionService.uploadPhoto(execution.id, file);
   };
 
   const markWorkerFinalized = async (execution: ServiceExecution) => {
@@ -186,10 +161,10 @@ export const ServiceExecutionPanel = ({
 
     setBusyExecutionId(execution.id);
     try {
-      await saveOptionalEvidence(execution, file);
+      const latestExecution = await saveOptionalEvidence(execution, file);
+      const finalized = await serviceExecutionService.finalize(latestExecution.id);
       setSelectedFileByExecution(prev => ({ ...prev, [execution.id]: null }));
       sessionService.addExecutionForParticipants(execution.id, execution.clientId, execution.workerId);
-      sessionService.setExecutionStatus(execution.id, 'FINALIZED');
       setMessage(execution.id, 'Trabajo finalizado. Ahora el cliente debe validar y calificar.');
       setFinalizingExecution(null);
       await onChanged();
@@ -217,28 +192,19 @@ export const ServiceExecutionPanel = ({
         latestExecution = await serviceExecutionService.begin(execution.id);
       }
 
-      if (latestExecution.status !== 'IN_PROCESS') {
+      if (latestExecution.status !== 'FINALIZED') {
         setMessage(
           execution.id,
-          'La orden debe estar en proceso antes de finalizarse.'
+          'La orden debe estar finalizada por el trabajador antes de validarse.'
         );
         return;
       }
 
-      if (file) {
-        latestExecution = await saveOptionalEvidence(latestExecution, file);
-        setSelectedFileByExecution(prev => ({ ...prev, [execution.id]: null }));
-      }
-
-      const canPersistCompletion = latestExecution.photoUrls.length > 0;
-      if (canPersistCompletion) {
-        await serviceExecutionService.complete(execution.id, {
-          clientRating: Number(feedback.rating),
-          clientComment: feedback.comment.trim(),
-        });
-      }
+      await serviceExecutionService.complete(execution.id, {
+        clientRating: Number(feedback.rating),
+        clientComment: feedback.comment.trim(),
+      });
       sessionService.addExecutionForParticipants(execution.id, execution.clientId, execution.workerId);
-      sessionService.setExecutionFeedback(execution.id, Number(feedback.rating), feedback.comment.trim());
       sessionService.recordWorkerReview(
         execution.workerId,
         Number(feedback.rating),
@@ -247,9 +213,7 @@ export const ServiceExecutionPanel = ({
       );
       setMessage(
         execution.id,
-        canPersistCompletion
-          ? 'Trabajo finalizado, validado y calificado por el cliente.'
-          : 'Trabajo validado localmente. El backend actual exige al menos una foto para persistir la finalizacion.'
+        'Trabajo validado y calificado por el cliente.'
       );
       setFinalizingExecution(null);
       await onChanged();
@@ -441,7 +405,7 @@ export const ServiceExecutionPanel = ({
                           <Button
                             variant="secondary"
                             onClick={async () => {
-                              sessionService.setExecutionStatus(execution.id, 'DISPUTED');
+                              await serviceExecutionService.dispute(execution.id);
                               setMessage(execution.id, 'Problema reportado. La orden paso a litigio.');
                               await onChanged();
                             }}
@@ -522,7 +486,7 @@ export const ServiceExecutionPanel = ({
                     Selecciona una foto o video
                   </span>
                   <span className="text-sm text-gray-500">
-                    Opcional. Las fotos se guardan en backend; los videos quedan como evidencia local.
+                    Las fotos se guardan en backend. Para finalizar debe existir al menos una foto.
                   </span>
                   <input
                     type="file"

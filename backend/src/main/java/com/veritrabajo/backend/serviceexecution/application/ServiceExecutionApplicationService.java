@@ -57,14 +57,29 @@ public class ServiceExecutionApplicationService {
     }
 
     @Transactional
-    public ServiceExecution completeExecution(UUID id, int clientRating, String clientComment) {
-        validateClientFeedback(clientRating, clientComment);
+    public ServiceExecution finalizeExecution(UUID id) {
         ServiceExecution execution = findOrThrow(id);
         ServiceExecutionFinalized event = execution.complete();
         ServiceExecution saved = repository.save(execution);
         eventPublisher.publish(event);
-        eventPublisher.publish(buildPartnershipEvent(event, clientRating, clientComment));
         return saved;
+    }
+
+    @Transactional
+    public ServiceExecution validateExecution(UUID id, int clientRating, String clientComment) {
+        validateClientFeedback(clientRating, clientComment);
+        ServiceExecution execution = findOrThrow(id);
+        execution.validateByClient(clientRating, clientComment);
+        ServiceExecution saved = repository.save(execution);
+        eventPublisher.publish(buildPartnershipEvent(saved, clientRating, clientComment));
+        return saved;
+    }
+
+    @Transactional
+    public ServiceExecution disputeExecution(UUID id) {
+        ServiceExecution execution = findOrThrow(id);
+        execution.dispute();
+        return repository.save(execution);
     }
 
     public ServiceExecution findExecution(UUID id) {
@@ -91,10 +106,10 @@ public class ServiceExecutionApplicationService {
     }
 
     private ServiceExecutionCompleted buildPartnershipEvent(
-            ServiceExecutionFinalized event, int clientRating, String clientComment) {
+            ServiceExecution execution, int clientRating, String clientComment) {
         return new ServiceExecutionCompleted(
-                event.executionId(),
-                event.workerId(),
+                execution.id(),
+                execution.workerId(),
                 clientRating,
                 clientComment,
                 true

@@ -42,6 +42,11 @@ public class ServiceExecutionEntity {
     )
     private List<EvidencePhotoEmbeddable> photos = new ArrayList<>();
 
+    private Integer clientRating;
+
+    @Column(length = 1000)
+    private String clientComment;
+
     @Version
     private Long version;
 
@@ -83,6 +88,22 @@ public class ServiceExecutionEntity {
 
     public void setPhotos(List<EvidencePhotoEmbeddable> photos) {
         this.photos = photos;
+    }
+
+    public Integer getClientRating() {
+        return clientRating;
+    }
+
+    public void setClientRating(Integer clientRating) {
+        this.clientRating = clientRating;
+    }
+
+    public String getClientComment() {
+        return clientComment;
+    }
+
+    public void setClientComment(String clientComment) {
+        this.clientComment = clientComment;
     }
 
     public Long getVersion() {

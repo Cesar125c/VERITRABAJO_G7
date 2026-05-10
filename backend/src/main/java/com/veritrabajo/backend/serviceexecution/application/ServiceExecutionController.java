@@ -84,8 +84,18 @@ public class ServiceExecutionController {
             @PathVariable UUID id,
             @RequestBody CompleteServiceExecutionRequest request) {
         return ResponseEntity.ok(ServiceExecutionResponse.from(
-                service.completeExecution(id, request.clientRating(), request.clientComment())
+                service.validateExecution(id, request.clientRating(), request.clientComment())
         ));
+    }
+
+    @PutMapping("/{id}/finalize")
+    public ResponseEntity<ServiceExecutionResponse> finalizeExecution(@PathVariable UUID id) {
+        return ResponseEntity.ok(ServiceExecutionResponse.from(service.finalizeExecution(id)));
+    }
+
+    @PutMapping("/{id}/dispute")
+    public ResponseEntity<ServiceExecutionResponse> disputeExecution(@PathVariable UUID id) {
+        return ResponseEntity.ok(ServiceExecutionResponse.from(service.disputeExecution(id)));
     }
 
     private static void validateImageFile(MultipartFile file) {
