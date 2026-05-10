@@ -38,15 +38,22 @@ export function useCustomerDashboardData(customerId: string | null) {
     }
 
     setIsLoading(true);
-    const [knownJobs, allOpenJobs, executions] = await Promise.all([
+    const [knownJobs, customerJobs, allOpenJobs, executionsFromBackend, knownExecutions] = await Promise.all([
       loadKnownJobs(sessionService.getPublishedJobIds()),
+      jobMarketplaceService.getByClientId(customerId).catch(() => []),
       jobMarketplaceService.getOpen(),
+      serviceExecutionService.getByClientId(customerId).catch(() => []),
       loadKnownExecutions(sessionService.getActiveExecutionIds()),
     ]);
+    const executions = [...executionsFromBackend, ...knownExecutions]
+      .filter((execution, index, values) =>
+        values.findIndex(item => item.id === execution.id) === index
+      )
+      .map(execution => sessionService.applyExecutionOverrides(execution));
 
     const visibleOpenJobs = allOpenJobs.filter(job => !job.selectedWorkerProfileId);
     const relatedOpenJobs = visibleOpenJobs.filter(job => job.clientId === customerId);
-    const jobsById = new Map([...knownJobs, ...relatedOpenJobs].map(job => [job.id, job]));
+    const jobsById = new Map([...knownJobs, ...customerJobs, ...relatedOpenJobs].map(job => [job.id, job]));
 
     const nextPublishedJobs = Array.from(jobsById.values()).filter(job => !job.selectedWorkerProfileId);
     const applicantEntries = await Promise.all(
@@ -103,13 +110,20 @@ export function useWorkerDashboardData(profileId: string | null) {
     }
 
     setIsLoading(true);
-    const [allOpenJobs, appliedJobs, executions, reputationData, profileData] = await Promise.all([
+    const [allOpenJobs, appliedJobs, backendAppliedJobs, executionsFromBackend, knownExecutions, reputationData, profileData] = await Promise.all([
       jobMarketplaceService.getOpen(),
       loadKnownJobs(sessionService.getAppliedJobIds()),
+      jobMarketplaceService.getApplicationsByWorkerId(profileId).catch(() => []),
+      serviceExecutionService.getByWorkerId(profileId).catch(() => []),
       loadKnownExecutions(sessionService.getActiveExecutionIds()),
       reputationService.getByProfileId(profileId),
       workerProfileService.getMe().catch(() => null),
     ]);
+    const executions = [...executionsFromBackend, ...knownExecutions]
+      .filter((execution, index, values) =>
+        values.findIndex(item => item.id === execution.id) === index
+      )
+      .map(execution => sessionService.applyExecutionOverrides(execution));
 
     if (profileData) {
       const email = sessionService.getAuthEmail() ?? profileData.id;
@@ -117,7 +131,11 @@ export function useWorkerDashboardData(profileId: string | null) {
     }
 
     const visibleOpenJobs = allOpenJobs.filter(job => !job.selectedWorkerProfileId);
-    const applicationJobs = [...appliedJobs, ...allOpenJobs.filter(job => job.applicantProfileIds.includes(profileId))]
+    const applicationJobs = [
+      ...appliedJobs,
+      ...backendAppliedJobs,
+      ...allOpenJobs.filter(job => job.applicantProfileIds.includes(profileId)),
+    ]
       .filter((job, index, jobs) => jobs.findIndex(item => item.id === job.id) === index);
     const nextApplicationStatuses = Object.fromEntries(
       applicationJobs.map(job => {

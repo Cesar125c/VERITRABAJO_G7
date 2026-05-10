@@ -49,6 +49,25 @@ public class JobMarketplaceQueryController {
         return ResponseEntity.ok(response);
     }
 
+    @GetMapping("/clients/{clientId}")
+    public ResponseEntity<List<JobPostResponse>> demandsByClient(@PathVariable String clientId) {
+        List<JobPostResponse> response = applicationService.getByClientId(clientId)
+                .stream()
+                .map(JobPostResponse::from)
+                .toList();
+        return ResponseEntity.ok(response);
+    }
+
+    @GetMapping("/workers/{workerProfileId}/applications")
+    public ResponseEntity<List<JobPostResponse>> demandsByApplicant(
+            @PathVariable String workerProfileId) {
+        List<JobPostResponse> response = applicationService.getByApplicantProfileId(workerProfileId)
+                .stream()
+                .map(JobPostResponse::from)
+                .toList();
+        return ResponseEntity.ok(response);
+    }
+
     @PostMapping("/{id}/applications")
     public ResponseEntity<JobPostResponse> apply(
             @PathVariable UUID id,

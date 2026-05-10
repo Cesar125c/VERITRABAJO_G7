@@ -13,4 +13,8 @@ public interface JobPostRepository {
     JobPost save(JobPost jobPost);
 
     List<JobPost> findOpenDemands();
+
+    List<JobPost> findByClientId(String clientId);
+
+    List<JobPost> findByApplicantProfileId(String workerProfileId);
 }

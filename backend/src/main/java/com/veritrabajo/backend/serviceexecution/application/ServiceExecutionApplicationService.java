@@ -12,6 +12,7 @@ import com.veritrabajo.backend.shared.contract.serviceexecution.ServiceExecution
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
 import java.util.UUID;
 
 @Service
@@ -68,6 +69,14 @@ public class ServiceExecutionApplicationService {
 
     public ServiceExecution findExecution(UUID id) {
         return findOrThrow(id);
+    }
+
+    public List<ServiceExecution> findByClientId(String clientId) {
+        return repository.findByClientId(clientId);
+    }
+
+    public List<ServiceExecution> findByWorkerId(String workerId) {
+        return repository.findByWorkerId(workerId);
     }
 
     private static void validateClientFeedback(int clientRating, String clientComment) {

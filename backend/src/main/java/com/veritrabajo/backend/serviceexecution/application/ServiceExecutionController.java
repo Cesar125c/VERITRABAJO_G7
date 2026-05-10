@@ -16,6 +16,7 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.util.List;
 import java.util.Locale;
 import java.util.UUID;
 
@@ -42,6 +43,24 @@ public class ServiceExecutionController {
     @GetMapping("/{id}")
     public ResponseEntity<ServiceExecutionResponse> getExecution(@PathVariable UUID id) {
         return ResponseEntity.ok(ServiceExecutionResponse.from(service.findExecution(id)));
+    }
+
+    @GetMapping("/clients/{clientId}")
+    public ResponseEntity<List<ServiceExecutionResponse>> getExecutionsByClient(
+            @PathVariable String clientId) {
+        return ResponseEntity.ok(service.findByClientId(clientId)
+                .stream()
+                .map(ServiceExecutionResponse::from)
+                .toList());
+    }
+
+    @GetMapping("/workers/{workerId}")
+    public ResponseEntity<List<ServiceExecutionResponse>> getExecutionsByWorker(
+            @PathVariable String workerId) {
+        return ResponseEntity.ok(service.findByWorkerId(workerId)
+                .stream()
+                .map(ServiceExecutionResponse::from)
+                .toList());
     }
 
     @PutMapping("/{id}/begin")

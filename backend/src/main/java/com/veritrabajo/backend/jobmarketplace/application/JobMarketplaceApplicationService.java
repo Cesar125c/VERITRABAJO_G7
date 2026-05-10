@@ -65,6 +65,14 @@ public class JobMarketplaceApplicationService {
         return repository.findOpenDemands();
     }
 
+    public List<JobPost> getByClientId(String clientId) {
+        return repository.findByClientId(clientId);
+    }
+
+    public List<JobPost> getByApplicantProfileId(String workerProfileId) {
+        return repository.findByApplicantProfileId(workerProfileId);
+    }
+
     private JobPost findOrThrow(UUID jobPostId) {
         return repository.findById(jobPostId)
                 .orElseThrow(() -> new JobPostNotFoundException(jobPostId));

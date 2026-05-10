@@ -16,6 +16,20 @@ export const serviceExecutionService = {
     return response.data;
   },
 
+  getByClientId: async (clientId: string): Promise<ServiceExecution[]> => {
+    const response = await apiClient.get<ServiceExecution[]>(
+      `/service-executions/clients/${clientId}`
+    );
+    return response.data;
+  },
+
+  getByWorkerId: async (workerId: string): Promise<ServiceExecution[]> => {
+    const response = await apiClient.get<ServiceExecution[]>(
+      `/service-executions/workers/${workerId}`
+    );
+    return response.data;
+  },
+
   begin: async (id: string): Promise<ServiceExecution> => {
     const response = await apiClient.put<ServiceExecution>(`/service-executions/${id}/begin`);
     return response.data;

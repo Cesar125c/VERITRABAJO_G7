@@ -40,4 +40,20 @@ public class JpaJobPostRepository implements JobPostRepository {
                 .map(JobPostMapper::toDomain)
                 .toList();
     }
+
+    @Override
+    public List<JobPost> findByClientId(String clientId) {
+        return springDataRepository.findByClientId(clientId)
+                .stream()
+                .map(JobPostMapper::toDomain)
+                .toList();
+    }
+
+    @Override
+    public List<JobPost> findByApplicantProfileId(String workerProfileId) {
+        return springDataRepository.findByApplicantProfileId(workerProfileId)
+                .stream()
+                .map(JobPostMapper::toDomain)
+                .toList();
+    }
 }

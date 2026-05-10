@@ -22,6 +22,18 @@ export const jobMarketplaceService = {
     return response.data;
   },
 
+  getByClientId: async (clientId: string): Promise<JobPost[]> => {
+    const response = await apiClient.get<JobPost[]>(`/job-posts/clients/${clientId}`);
+    return response.data;
+  },
+
+  getApplicationsByWorkerId: async (workerProfileId: string): Promise<JobPost[]> => {
+    const response = await apiClient.get<JobPost[]>(
+      `/job-posts/workers/${workerProfileId}/applications`
+    );
+    return response.data;
+  },
+
   apply: async (id: string, data: ApplyJobPostRequest): Promise<JobPost> => {
     const response = await apiClient.post<JobPost>(`/job-posts/${id}/applications`, data);
     return response.data;
